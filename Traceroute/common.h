@@ -11,5 +11,6 @@
 #include <string>
 #include <ws2tcpip.h>
 #include <algorithm>
+#include <time.h>
 
 using namespace std;

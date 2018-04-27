@@ -67,15 +67,32 @@ void Socket::receiveICMPResponse(sockaddr_in server) {
 	HANDLE events[] = {eventICMP, eventDNSRecv};
 
 	while (true) { //TODO: check when to terminate
-		DWORD timeout;
+		DWORD timeout = clock_t() + DEFAULT_TIMEOUT_DUR;
+
 		int ret = WaitForMultipleObjects(2, events, FALSE, timeout);
 
 		switch (ret) {
 
-		case WAIT_OBJECT_0://ICMP event
+		case WAIT_OBJECT_0://ICMP event, lets receive it!
+			int response_size = sizeof(server);
+			int recv_res = recvfrom(sock, (char *)rec_buf, MAX_REPLY_SIZE, 0, (struct sockaddr*)&server, &response_size); //TODO: check if server needs to be passed
+			if (recv_res == SOCKET_ERROR) {
+				printf("recv failed with error %d\n", WSAGetLastError());
+				exit(-1); //TODO: exit, really? Sure?
+			}
+			
+			if ((router_icmp_hdr->type == ICMP_TTL_EXPIRED || router_icmp_hdr->type == ICMP_ECHO_REPLY) && router_icmp_hdr->code == 0) { //TODO: ) bcz sendICMP had 0? and check for echo types
+				if (orig_ip_hdr->proto == PROTOCOL_ICMP) {
+					//let's check if process id is same as current process, in short... check if packet belongs to the App! If not ignore!
+					if (orig_icmp_hdr->id == GetCurrentProcessId()) {
+						//take router_ip_hdr->source_ip initiaite DNS lookup
+					}
+				}
+			}
+
 			break;
 
-		case WAIT_OBJECT_0 +1://DNS event
+		case WAIT_OBJECT_0 +1://event DNS response
 			break;
 
 		default://handle timeout

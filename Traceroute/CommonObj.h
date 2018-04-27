@@ -23,6 +23,9 @@
 #define ICMP_TTL_EXPIRED 11
 #define ICMP_ECHO_REQUEST 8 
 
+#define DEFAULT_TIMEOUT_DUR 500 //500 ms
+#define PROTOCOL_ICMP 1
+
 /* remember the current packing state */
 #pragma pack (push)
 #pragma pack (1) 
