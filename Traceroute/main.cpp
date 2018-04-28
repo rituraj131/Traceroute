@@ -28,8 +28,9 @@ int main(int argc, char **argv) {
 		//TODO: check what and how to do 3 probes per hop!
 		mySocket.sendICMPRequest(i, server);
 	}
+	
+	mySocket.receiveICMPResponse(server);
 
 	WSACleanup();
-	system("pause");
 	return 0;
 }

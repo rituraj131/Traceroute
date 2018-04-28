@@ -7,10 +7,11 @@ class Socket
 {
 	SOCKET sock;
 	HANDLE eventICMP, eventDNSRecv;
+	ICMPResponseModel *ICMPResArr[MAX_HOP+1];
 public:
 	Socket();
 	void initSocket();
-	int sendICMPRequest(int, sockaddr_in);
+	void sendICMPRequest(int, sockaddr_in);
 	void receiveICMPResponse(sockaddr_in);
 	~Socket();
 };

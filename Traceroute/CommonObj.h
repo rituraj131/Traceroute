@@ -24,7 +24,7 @@
 #define ICMP_ECHO_REQUEST 8 
 
 #define DEFAULT_TIMEOUT_DUR 500 //500 ms
-#define PROTOCOL_ICMP 1
+#define MAX_HOP 30
 
 /* remember the current packing state */
 #pragma pack (push)
@@ -59,3 +59,12 @@ public:
 /* now restore the previous packing state */
 #pragma pack (pop) 
 
+
+class ICMPResponseModel {
+public:
+	DWORD IP;
+	bool status; //true for success and false for nothing or failure
+	int attemptCount;
+	DWORD packetSendTime;
+	DWORD RTT;
+};
