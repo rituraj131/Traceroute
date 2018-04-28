@@ -67,4 +67,5 @@ public:
 	int attemptCount;
 	DWORD packetSendTime;
 	DWORD RTT;
+	string char_ip, hostname;
 };

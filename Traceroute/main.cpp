@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 	Socket mySocket;
 	mySocket.initSocket();
 
-	for (int i = 1; i <= 30; i++) {
+	for (int i = 0; i < 30; i++) {
 		//TODO: check what and how to do 3 probes per hop!
 		mySocket.sendICMPRequest(i, server);
 	}
