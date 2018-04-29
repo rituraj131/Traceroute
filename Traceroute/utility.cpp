@@ -57,3 +57,16 @@ struct sockaddr_in utility::DNSLookUP(char* host) {
 
 	return server;
 }
+
+SOCKET utility::initSocket() {
+	/* ready to create a socket */
+	SOCKET sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	if (sock == INVALID_SOCKET)
+	{
+		printf("Unable to create a raw socket: error %d\n", WSAGetLastError());
+		WSACleanup();
+		exit(-1);
+	}
+
+	return sock;
+}
