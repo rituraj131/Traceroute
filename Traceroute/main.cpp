@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
 	SOCKET sock = util.initSocket();
 
-	for (int i = 0; i < 30; i++) {
+	for (int i = 1; i <= 30; i++) {
 		//TODO: check what and how to do 3 probes per hop!
 		sendICMPRequest(sock, i, server);
 	}
@@ -91,7 +91,9 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 
 	//HANDLE events[] = {eventICMP, eventDNSRecv};
 	int hop_count = 0;
-	while (hop_count < 19) { //TODO: check when to terminate
+	bool isEchoRecvd = false;
+
+	while (hop_count <= 30 && !isEchoRecvd) { //TODO: check when to terminate
 		DWORD timeout = clock_t() + DEFAULT_TIMEOUT_DUR;
 
 		if (WSAEventSelect(sock, eventICMP, FD_READ) == SOCKET_ERROR) {
@@ -121,13 +123,17 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 					if (orig_icmp_hdr->id == GetCurrentProcessId()) {
 						ICMPResArr[orig_icmp_hdr->seq]->status = true;
 						ICMPResArr[orig_icmp_hdr->seq]->IP = router_ip_hdr->source_ip;
-						ICMPResArr[orig_icmp_hdr->seq]->attemptCount++;
 						ICMPResArr[orig_icmp_hdr->seq]->RTT = clock_t() - ICMPResArr[orig_icmp_hdr->seq]->packetSendTime;
 						//take router_ip_hdr->source_ip initiaite DNS lookup
 						//printf("got response from IP %lu hop count %d\n", router_ip_hdr->source_ip, ++hop_count);
 						dnsThread[orig_icmp_hdr->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, orig_icmp_hdr->seq);
 						if (dnsThread[orig_icmp_hdr->seq].joinable())
 							dnsThread[orig_icmp_hdr->seq].join();
+
+						if (router_icmp_hdr->type == ICMP_ECHO_REPLY) {
+							isEchoRecvd = true;
+							ICMPResArr[orig_icmp_hdr->seq]->isLast = true;
+						}
 						//printf("moving on..\n");
 					}
 				}
@@ -168,13 +174,15 @@ void dnsLookUp(u_long IP, u_short seq) {
 }
 
 void printResult() {
-	for (int i = 0; i < MAX_HOP; i++) {
+	for (int i = 1; i <= MAX_HOP; i++) {
 		if (ICMPResArr[i]->char_ip.length() == 0) {
 			printf("%d  *\n", i + 1);
 			continue;
 		}
 		//cout << i + 1 << "  " << ICMPResArr[i]->hostname << "  " << ICMPResArr[i]->char_ip << endl;
-		printf("%d  %s  (%s)  %0.3f ms  (%d)\n", i + 1, ICMPResArr[i]->hostname.c_str(), ICMPResArr[i]->char_ip.c_str(),
+		printf("%d  %s  (%s)  %0.3f ms  (%d)\n", i, ICMPResArr[i]->hostname.c_str(), ICMPResArr[i]->char_ip.c_str(),
 			(float)(ICMPResArr[i]->RTT) / 1000, ICMPResArr[i]->attemptCount);
+		if (ICMPResArr[i]->isLast)
+			break;
 	}
 }

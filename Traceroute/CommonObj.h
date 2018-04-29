@@ -63,7 +63,7 @@ public:
 class ICMPResponseModel {
 public:
 	DWORD IP;
-	bool status; //true for success and false for nothing or failure
+	bool status, isLast; //true for success and false for nothing or failure
 	int attemptCount;
 	DWORD packetSendTime;
 	DWORD RTT;
