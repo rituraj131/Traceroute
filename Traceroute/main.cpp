@@ -6,10 +6,13 @@ void sendICMPRequest(SOCKET, int, sockaddr_in);
 void receiveICMPResponse(SOCKET, sockaddr_in);
 void dnsLookUp(u_long, u_short);
 void printResult();
+void resetRetxTimeout();
+void retxPackets(SOCKET, sockaddr_in);
 
 ICMPResponseModel *ICMPResArr[MAX_HOP];
 mutex dnsUpdateMutex;
 thread dnsThread[MAX_HOP];
+clock_t retx_timeout;
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
@@ -78,6 +81,7 @@ void sendICMPRequest(SOCKET sock, int ttl, sockaddr_in server) {
 	}
 	ICMPResArr[ttl] = new ICMPResponseModel();
 	ICMPResArr[ttl]->packetSendTime = clock_t();
+	ICMPResArr[ttl]->attemptCount++;
 	//return SEND_ICMP_SENDTO_ALL_FINE;
 }
 
@@ -89,12 +93,12 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 	ICMPHeader *orig_icmp_hdr = (ICMPHeader *)(orig_ip_hdr + 1);
 	HANDLE eventICMP = WSACreateEvent();
 
-	//HANDLE events[] = {eventICMP, eventDNSRecv};
 	int hop_count = 0;
 	bool isEchoRecvd = false;
+	resetRetxTimeout();
 
 	while (hop_count <= 30 && !isEchoRecvd) { //TODO: check when to terminate
-		DWORD timeout = clock_t() + DEFAULT_TIMEOUT_DUR;
+		DWORD timeout = retx_timeout - clock_t();
 
 		if (WSAEventSelect(sock, eventICMP, FD_READ) == SOCKET_ERROR) {
 			printf("eventICMP WSAEventSelect error %d\n", WSAGetLastError());
@@ -102,9 +106,7 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 		}
 
 		int ret = WaitForSingleObject(eventICMP, timeout);
-		//int ret = WaitForSiObjects(1, eventICMP, FALSE, timeout);
-		if (ret == WAIT_TIMEOUT)
-			break;
+		
 		switch (ret) {
 
 		case WAIT_OBJECT_0: { //ICMP event, lets receive it!
@@ -116,7 +118,6 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 				exit(-1); //TODO: exit, really? Sure?
 			}
 
-			//printf("IP: %lu\n", router_ip_hdr->source_ip);
 			if ((router_icmp_hdr->type == ICMP_TTL_EXPIRED || router_icmp_hdr->type == ICMP_ECHO_REPLY) && router_icmp_hdr->code == 0) { //TODO: ) bcz sendICMP had 0? and check for echo types
 				if (orig_ip_hdr->proto == IPPROTO_ICMP) {
 					//let's check if process id is same as current process, in short... check if packet belongs to the App! If not ignore!
@@ -124,7 +125,7 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 						ICMPResArr[orig_icmp_hdr->seq]->status = true;
 						ICMPResArr[orig_icmp_hdr->seq]->IP = router_ip_hdr->source_ip;
 						ICMPResArr[orig_icmp_hdr->seq]->RTT = clock_t() - ICMPResArr[orig_icmp_hdr->seq]->packetSendTime;
-						//take router_ip_hdr->source_ip initiaite DNS lookup
+						
 						//printf("got response from IP %lu hop count %d\n", router_ip_hdr->source_ip, ++hop_count);
 						dnsThread[orig_icmp_hdr->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, orig_icmp_hdr->seq);
 						if (dnsThread[orig_icmp_hdr->seq].joinable())
@@ -140,11 +141,13 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 			}
 			WSAResetEvent(eventICMP);
 		}
-							break;
+		break;
 
 		case WAIT_TIMEOUT: { //handle timeout
+			retxPackets(sock, server);
+			resetRetxTimeout();
 		}
-						   break;
+		break;
 		}
 	}
 	printResult();
@@ -184,5 +187,16 @@ void printResult() {
 			(float)(ICMPResArr[i]->RTT) / 1000, ICMPResArr[i]->attemptCount);
 		if (ICMPResArr[i]->isLast)
 			break;
+	}
+}
+
+void resetRetxTimeout() {
+	retx_timeout = clock_t() + DEFAULT_TIMEOUT_DUR;
+}
+
+void retxPackets(SOCKET sock, sockaddr_in server) {
+	for (int i = 1; i <= MAX_HOP; i++) {
+		if (!ICMPResArr[i]->status && ICMPResArr[i]->attemptCount < 3)
+			sendICMPRequest(sock, i, server);
 	}
 }
