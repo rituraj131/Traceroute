@@ -1,6 +1,5 @@
 ﻿  main.cpp
-main.cpp(190): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
-main.cpp(208): warning C4477: 'printf' : format string '%0.3f' requires an argument of type 'double', but variadic argument 4 has type 'LONGLONG'
+main.cpp(195): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
   Generating code
   2 of 177 functions ( 1.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation

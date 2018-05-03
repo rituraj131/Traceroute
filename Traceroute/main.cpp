@@ -13,8 +13,10 @@ ICMPResponseModel *ICMPResArr[MAX_HOP+1];
 mutex dnsUpdateMutex;
 thread dnsThread[MAX_HOP + 1];
 clock_t retx_timeout;
+DWORD exec_start;
 bool exitWait = false;
 LARGE_INTEGER freq;
+double PCFreq;
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
@@ -33,12 +35,15 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
+	exec_start = timeGetTime();
+
 	utility util;
 	struct sockaddr_in server = util.DNSLookUP(host);
 
 	SOCKET sock = util.initSocket();
 
 	QueryPerformanceCounter(&freq);
+	PCFreq = double(freq.QuadPart) / 1000.0;
 
 	for (int i = 1; i <= 30; i++) {
 		sendICMPRequest(sock, i, server);
@@ -101,11 +106,10 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 	HANDLE eventICMP = WSACreateEvent();
 	HANDLE eventArr[] = {eventICMP};
 
-	int hop_count = 0;
 	bool isExit = false;
 	resetRetxTimeout();
 
-	while (hop_count <= 30 && !exitWait) { //TODO: check when to terminate
+	while (!exitWait) { //TODO: check when to terminate
 		DWORD timeout = retx_timeout - clock_t();
 
 		if (WSAEventSelect(sock, eventICMP, FD_READ) == SOCKET_ERROR) {
@@ -139,8 +143,8 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 						ICMPResArr[icmpHeader->seq]->gotResponse = true;
 						LARGE_INTEGER endTime;
 						QueryPerformanceCounter(&endTime);
-						ICMPResArr[icmpHeader->seq]->RTT.QuadPart = (endTime.QuadPart - ICMPResArr[icmpHeader->seq]->startTime.QuadPart);
-						//ICMPResArr[icmpHeader->seq]->RTT = clock_t() - ICMPResArr[icmpHeader->seq]->packetSendTime;
+						//printf("%f\n", (endTime.QuadPart - ICMPResArr[icmpHeader->seq]->startTime.QuadPart)/PCFreq);
+						ICMPResArr[icmpHeader->seq]->RTT = 1e3 * double((endTime.QuadPart - ICMPResArr[icmpHeader->seq]->startTime.QuadPart) / PCFreq);
 
 						dnsThread[icmpHeader->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, icmpHeader->seq);
 						if (dnsThread[icmpHeader->seq].joinable())
@@ -204,12 +208,13 @@ void printResult() {
 			printf("%d  *\n", i);
 			continue;
 		}
-		//cout << i + 1 << "  " << ICMPResArr[i]->hostname << "  " << ICMPResArr[i]->char_ip << endl;
 		printf("%d  %s  (%s)  %0.3f ms  (%d)\n", i, ICMPResArr[i]->hostname.c_str(), ICMPResArr[i]->char_ip.c_str(),
-			ICMPResArr[i]->RTT.QuadPart, ICMPResArr[i]->attemptCount);
+			ICMPResArr[i]->RTT, ICMPResArr[i]->attemptCount);
 		if (ICMPResArr[i]->isEcho)
 			break;
 	}
+
+	printf("\nTotal execution time %d ms\n\n", timeGetTime() - exec_start);
 }
 
 void resetRetxTimeout() {

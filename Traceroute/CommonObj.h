@@ -66,7 +66,7 @@ public:
 	bool isLast; //true for success and false for nothing or failure
 	int attemptCount;
 	LARGE_INTEGER startTime;
-	LARGE_INTEGER RTT;
+	double RTT;
 	DWORD packetSendTime;
 	//DWORD RTT;
 	bool gotResponse;
