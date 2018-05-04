@@ -17,6 +17,7 @@ DWORD exec_start;
 bool exitWait = false;
 LARGE_INTEGER freq;
 double PCFreq;
+priority_queue <HeapHopObj, vector<HeapHopObj>, TimeoutComparator> timeoutQueue;
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
@@ -47,6 +48,7 @@ int main(int argc, char **argv) {
 
 	for (int i = 1; i <= 30; i++) {
 		sendICMPRequest(sock, i, server);
+		timeoutQueue.push(HeapHopObj(i, DEFAULT_TIMEOUT_DUR));
 	}
 	
 	receiveICMPResponse(sock, server);
@@ -97,6 +99,13 @@ void sendICMPRequest(SOCKET sock, int ttl, sockaddr_in server) {
 	//return SEND_ICMP_SENDTO_ALL_FINE;
 }
 
+
+/*
+queryperformancecounter
+Ref: https://stackoverflow.com/a/1739265/4135902
+https://www.youtube.com/watch?v=SodHvciZTNk
+https://msdn.microsoft.com/en-us/library/windows/desktop/dn553408(v=vs.85).aspx
+*/
 void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 	u_char rec_buf[MAX_REPLY_SIZE]; /* this buffer starts with an IP header */
 	IPHeader *router_ip_hdr = (IPHeader *)rec_buf;
@@ -104,7 +113,6 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 	IPHeader *orig_ip_hdr = (IPHeader *)(router_icmp_hdr + 1);
 	ICMPHeader *orig_icmp_hdr = (ICMPHeader *)(orig_ip_hdr + 1);
 	HANDLE eventICMP = WSACreateEvent();
-	HANDLE eventArr[] = {eventICMP};
 
 	bool isExit = false;
 	resetRetxTimeout();
@@ -192,10 +200,16 @@ void dnsLookUp(u_long IP, u_short seq) {
 	int status = getaddrinfo(ip_ntoa, 0, 0, &res);
 	char host[512];
 	status = getnameinfo(res->ai_addr, res->ai_addrlen, host, 512, 0, 0, 0);
-
+	string str_ip_ntoa(ip_ntoa);
+	string str_host(host);
+	
 	std::lock_guard<std::mutex> guard(dnsUpdateMutex);
+	if (str_ip_ntoa.compare(str_host) == 0)
+		ICMPResArr[seq]->hostname = "<no DNS entry>";
+	else
+		ICMPResArr[seq]->hostname = host;
+
 	ICMPResArr[seq]->char_ip = ip_ntoa;
-	ICMPResArr[seq]->hostname = host;
 	/*printf("%d  %s  (%s)  %d ms  (%f) %d\n", seq, ICMPResArr[seq]->hostname.c_str(), ICMPResArr[seq]->char_ip.c_str(),
 		ICMPResArr[seq]->RTT.QuadPart, ICMPResArr[seq]->attemptCount);*/
 	//cout << seq << "  " << ICMPResArr[seq]->char_ip << "  " << ICMPResArr[seq]->hostname << endl;

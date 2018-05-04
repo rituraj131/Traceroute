@@ -73,3 +73,22 @@ public:
 	bool isEcho;
 	string char_ip, hostname;
 };
+
+/*
+Object for each TTL router
+*/
+class HeapHopObj {
+public:
+	int ttl;
+	int timeout;
+	HeapHopObj(int i, int time_out) { ttl = i; timeout = time_out; }
+};
+
+class TimeoutComparator
+{
+public:
+	bool operator()(const HeapHopObj& obj1, const HeapHopObj& obj2)
+	{
+		return obj1.timeout < obj2.timeout;
+	}
+};
