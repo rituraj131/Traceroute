@@ -13,6 +13,8 @@ ICMPResponseModel *ICMPResArr[MAX_HOP];
 mutex dnsUpdateMutex;
 thread dnsThread[MAX_HOP];
 clock_t retx_timeout;
+bool exitWait = false;
+LARGE_INTEGER freq;
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
@@ -35,6 +37,8 @@ int main(int argc, char **argv) {
 	struct sockaddr_in server = util.DNSLookUP(host);
 
 	SOCKET sock = util.initSocket();
+
+	QueryPerformanceCounter(&freq);
 
 	for (int i = 1; i <= 30; i++) {
 		//TODO: check what and how to do 3 probes per hop!
@@ -81,6 +85,7 @@ void sendICMPRequest(SOCKET sock, int ttl, sockaddr_in server) {
 	}
 	ICMPResArr[ttl] = new ICMPResponseModel();
 	ICMPResArr[ttl]->packetSendTime = clock_t();
+	QueryPerformanceCounter(&ICMPResArr[ttl]->startTime);
 	ICMPResArr[ttl]->attemptCount++;
 	//return SEND_ICMP_SENDTO_ALL_FINE;
 }
@@ -92,12 +97,13 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 	IPHeader *orig_ip_hdr = (IPHeader *)(router_icmp_hdr + 1);
 	ICMPHeader *orig_icmp_hdr = (ICMPHeader *)(orig_ip_hdr + 1);
 	HANDLE eventICMP = WSACreateEvent();
+	HANDLE eventArr[] = {eventICMP};
 
 	int hop_count = 0;
-	bool isEchoRecvd = false;
+	bool isExit = false;
 	resetRetxTimeout();
 
-	while (hop_count <= 30 && !isEchoRecvd) { //TODO: check when to terminate
+	while (hop_count <= 30 && !exitWait) { //TODO: check when to terminate
 		DWORD timeout = retx_timeout - clock_t();
 
 		if (WSAEventSelect(sock, eventICMP, FD_READ) == SOCKET_ERROR) {
@@ -106,7 +112,6 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 		}
 
 		int ret = WaitForSingleObject(eventICMP, timeout);
-		
 		switch (ret) {
 
 		case WAIT_OBJECT_0: { //ICMP event, lets receive it!
@@ -120,28 +125,39 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 
 			if ((router_icmp_hdr->type == ICMP_TTL_EXPIRED || router_icmp_hdr->type == ICMP_ECHO_REPLY) && router_icmp_hdr->code == 0) { //TODO: ) bcz sendICMP had 0? and check for echo types
 				if (orig_ip_hdr->proto == IPPROTO_ICMP) {
+
+					ICMPHeader *icmpHeader = orig_icmp_hdr;
+					if (router_icmp_hdr->type == ICMP_ECHO_REPLY)
+						icmpHeader = router_icmp_hdr;
+
 					//let's check if process id is same as current process, in short... check if packet belongs to the App! If not ignore!
-					if (orig_icmp_hdr->id == GetCurrentProcessId()) {
-						ICMPResArr[orig_icmp_hdr->seq]->status = true;
-						ICMPResArr[orig_icmp_hdr->seq]->IP = router_ip_hdr->source_ip;
-						ICMPResArr[orig_icmp_hdr->seq]->RTT = clock_t() - ICMPResArr[orig_icmp_hdr->seq]->packetSendTime;
-						
-						//printf("got response from IP %lu hop count %d\n", router_ip_hdr->source_ip, ++hop_count);
-						dnsThread[orig_icmp_hdr->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, orig_icmp_hdr->seq);
-						if (dnsThread[orig_icmp_hdr->seq].joinable())
-							dnsThread[orig_icmp_hdr->seq].join();
+					if (icmpHeader->id == GetCurrentProcessId()) {
+						ICMPResArr[icmpHeader->seq]->IP = router_ip_hdr->source_ip;
+						ICMPResArr[icmpHeader->seq]->gotResponse = true;
+						LARGE_INTEGER endTime;
+						QueryPerformanceCounter(&endTime);
+						ICMPResArr[icmpHeader->seq]->RTT.QuadPart = (endTime.QuadPart - ICMPResArr[icmpHeader->seq]->startTime.QuadPart);
+						//ICMPResArr[icmpHeader->seq]->RTT = clock_t() - ICMPResArr[icmpHeader->seq]->packetSendTime;
+
+						dnsThread[icmpHeader->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, icmpHeader->seq);
+						if (dnsThread[icmpHeader->seq].joinable())
+							dnsThread[icmpHeader->seq].join();
 
 						if (router_icmp_hdr->type == ICMP_ECHO_REPLY) {
-							isEchoRecvd = true;
-							ICMPResArr[orig_icmp_hdr->seq]->isLast = true;
+							exitWait = true;
+							ICMPResArr[icmpHeader->seq]->isEcho = true;
+							ICMPResArr[icmpHeader->seq]->isLast = true;
 						}
-						//printf("moving on..\n");
 					}
 				}
 			}
 			WSAResetEvent(eventICMP);
 		}
 		break;
+
+		case WAIT_OBJECT_0 +1:
+			//isExit = true;
+			break;
 
 		case WAIT_TIMEOUT: { //handle timeout
 			retxPackets(sock, server);
@@ -172,20 +188,22 @@ void dnsLookUp(u_long IP, u_short seq) {
 	std::lock_guard<std::mutex> guard(dnsUpdateMutex);
 	ICMPResArr[seq]->char_ip = ip_ntoa;
 	ICMPResArr[seq]->hostname = host;
-
+	/*printf("%d  %s  (%s)  %d ms  (%f)\n", seq, ICMPResArr[seq]->hostname.c_str(), ICMPResArr[seq]->char_ip.c_str(),
+		ICMPResArr[seq]->RTT.QuadPart);*/
 	//cout << seq << "  " << ICMPResArr[seq]->char_ip << "  " << ICMPResArr[seq]->hostname << endl;
 }
 
 void printResult() {
+	//printf("\nprinting results\n");
 	for (int i = 1; i <= MAX_HOP; i++) {
 		if (ICMPResArr[i]->char_ip.length() == 0) {
-			printf("%d  *\n", i + 1);
+			printf("%d  *\n", i);
 			continue;
 		}
 		//cout << i + 1 << "  " << ICMPResArr[i]->hostname << "  " << ICMPResArr[i]->char_ip << endl;
 		printf("%d  %s  (%s)  %0.3f ms  (%d)\n", i, ICMPResArr[i]->hostname.c_str(), ICMPResArr[i]->char_ip.c_str(),
-			(float)(ICMPResArr[i]->RTT) / 1000, ICMPResArr[i]->attemptCount);
-		if (ICMPResArr[i]->isLast)
+			ICMPResArr[i]->RTT.QuadPart, ICMPResArr[i]->attemptCount);
+		if (ICMPResArr[i]->isEcho)
 			break;
 	}
 }
@@ -195,8 +213,14 @@ void resetRetxTimeout() {
 }
 
 void retxPackets(SOCKET sock, sockaddr_in server) {
+	bool isAnyRetx = false;
 	for (int i = 1; i <= MAX_HOP; i++) {
-		if (!ICMPResArr[i]->status && ICMPResArr[i]->attemptCount < 3)
+		if (!ICMPResArr[i]->gotResponse && ICMPResArr[i]->attemptCount < 3) {
 			sendICMPRequest(sock, i, server);
+			isAnyRetx = true;
+		}
 	}
+
+	if (!isAnyRetx)
+		exitWait = true;
 }

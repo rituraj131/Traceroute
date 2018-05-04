@@ -63,9 +63,13 @@ public:
 class ICMPResponseModel {
 public:
 	DWORD IP;
-	bool status, isLast; //true for success and false for nothing or failure
+	bool isLast; //true for success and false for nothing or failure
 	int attemptCount;
+	LARGE_INTEGER startTime;
+	LARGE_INTEGER RTT;
 	DWORD packetSendTime;
-	DWORD RTT;
+	//DWORD RTT;
+	bool gotResponse;
+	bool isEcho;
 	string char_ip, hostname;
 };
