@@ -9,9 +9,9 @@ void printResult();
 void resetRetxTimeout();
 void retxPackets(SOCKET, sockaddr_in);
 
-ICMPResponseModel *ICMPResArr[MAX_HOP];
+ICMPResponseModel *ICMPResArr[MAX_HOP+1];
 mutex dnsUpdateMutex;
-thread dnsThread[MAX_HOP];
+thread dnsThread[MAX_HOP + 1];
 clock_t retx_timeout;
 bool exitWait = false;
 LARGE_INTEGER freq;
@@ -41,7 +41,6 @@ int main(int argc, char **argv) {
 	QueryPerformanceCounter(&freq);
 
 	for (int i = 1; i <= 30; i++) {
-		//TODO: check what and how to do 3 probes per hop!
 		sendICMPRequest(sock, i, server);
 	}
 	
@@ -83,10 +82,13 @@ void sendICMPRequest(SOCKET sock, int ttl, sockaddr_in server) {
 	if (sendto(sock, (char*)send_buf, packet_size, 0, (SOCKADDR *)&server, sizeof(server)) == SOCKET_ERROR) {
 		//return SEND_ICMP_SENDTO_SOCKERROR;
 	}
-	ICMPResArr[ttl] = new ICMPResponseModel();
+	if(ICMPResArr[ttl] == NULL)
+		ICMPResArr[ttl] = new ICMPResponseModel();
+	
 	ICMPResArr[ttl]->packetSendTime = clock_t();
 	QueryPerformanceCounter(&ICMPResArr[ttl]->startTime);
 	ICMPResArr[ttl]->attemptCount++;
+	//printf("ttl %d attemptcount %d\n", ttl, ICMPResArr[ttl]->attemptCount);
 	//return SEND_ICMP_SENDTO_ALL_FINE;
 }
 
@@ -126,12 +128,13 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 			if ((router_icmp_hdr->type == ICMP_TTL_EXPIRED || router_icmp_hdr->type == ICMP_ECHO_REPLY) && router_icmp_hdr->code == 0) { //TODO: ) bcz sendICMP had 0? and check for echo types
 				if (orig_ip_hdr->proto == IPPROTO_ICMP) {
 
-					ICMPHeader *icmpHeader = orig_icmp_hdr;
+					ICMPHeader *icmpHeader;
 					if (router_icmp_hdr->type == ICMP_ECHO_REPLY)
 						icmpHeader = router_icmp_hdr;
+					else
+						icmpHeader = orig_icmp_hdr;
 
-					//let's check if process id is same as current process, in short... check if packet belongs to the App! If not ignore!
-					if (icmpHeader->id == GetCurrentProcessId()) {
+					if (icmpHeader->id == GetCurrentProcessId() && !ICMPResArr[icmpHeader->seq]->gotResponse) {
 						ICMPResArr[icmpHeader->seq]->IP = router_ip_hdr->source_ip;
 						ICMPResArr[icmpHeader->seq]->gotResponse = true;
 						LARGE_INTEGER endTime;
@@ -144,7 +147,7 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 							dnsThread[icmpHeader->seq].join();
 
 						if (router_icmp_hdr->type == ICMP_ECHO_REPLY) {
-							exitWait = true;
+							//exitWait = true;
 							ICMPResArr[icmpHeader->seq]->isEcho = true;
 							ICMPResArr[icmpHeader->seq]->isLast = true;
 						}
@@ -171,6 +174,7 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 
 /*
 Reference: https://stackoverflow.com/a/10564774/4135902
+http://en.cppreference.com/w/cpp/thread/mutex
 */
 void dnsLookUp(u_long IP, u_short seq) {
 	in_addr addr;
@@ -188,8 +192,8 @@ void dnsLookUp(u_long IP, u_short seq) {
 	std::lock_guard<std::mutex> guard(dnsUpdateMutex);
 	ICMPResArr[seq]->char_ip = ip_ntoa;
 	ICMPResArr[seq]->hostname = host;
-	/*printf("%d  %s  (%s)  %d ms  (%f)\n", seq, ICMPResArr[seq]->hostname.c_str(), ICMPResArr[seq]->char_ip.c_str(),
-		ICMPResArr[seq]->RTT.QuadPart);*/
+	/*printf("%d  %s  (%s)  %d ms  (%f) %d\n", seq, ICMPResArr[seq]->hostname.c_str(), ICMPResArr[seq]->char_ip.c_str(),
+		ICMPResArr[seq]->RTT.QuadPart, ICMPResArr[seq]->attemptCount);*/
 	//cout << seq << "  " << ICMPResArr[seq]->char_ip << "  " << ICMPResArr[seq]->hostname << endl;
 }
 
@@ -214,8 +218,10 @@ void resetRetxTimeout() {
 
 void retxPackets(SOCKET sock, sockaddr_in server) {
 	bool isAnyRetx = false;
+	//printf("retxPackets...");
 	for (int i = 1; i <= MAX_HOP; i++) {
 		if (!ICMPResArr[i]->gotResponse && ICMPResArr[i]->attemptCount < 3) {
+			//printf(" %d %d    ", i, ICMPResArr[i]->attemptCount);
 			sendICMPRequest(sock, i, server);
 			isAnyRetx = true;
 		}
