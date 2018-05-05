@@ -155,8 +155,6 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 						ICMPResArr[icmpHeader->seq]->RTT = 1e3 * double((endTime.QuadPart - ICMPResArr[icmpHeader->seq]->startTime.QuadPart) / PCFreq);
 
 						dnsThread[icmpHeader->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, icmpHeader->seq);
-						if (dnsThread[icmpHeader->seq].joinable())
-							dnsThread[icmpHeader->seq].join();
 
 						if (router_icmp_hdr->type == ICMP_ECHO_REPLY) {
 							//exitWait = true;
@@ -180,6 +178,11 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 		}
 		break;
 		}
+	}
+
+	for (int i = 1; i <= MAX_HOP; i++) {
+		if (dnsThread[i].joinable())
+			dnsThread[i].join();
 	}
 	printResult();
 }
