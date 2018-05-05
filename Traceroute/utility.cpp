@@ -34,7 +34,7 @@ struct sockaddr_in utility::DNSLookUP(char* host) {
 		// if not a valid IP, then do a DNS lookup
 		if ((remote = gethostbyname(host)) == NULL)
 		{
-			cout << "DNS lookup for host name failed with error " << WSAGetLastError() << endl;
+			//cout << "DNS lookup for host name failed with error " << WSAGetLastError() << endl;
 			return server;
 			//exit(-1);
 		}

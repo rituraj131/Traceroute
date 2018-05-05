@@ -7,7 +7,7 @@
 #include <iterator>
 
 void sendICMPRequest(SOCKET, int, sockaddr_in);
-void receiveICMPResponse(SOCKET, sockaddr_in);
+int receiveICMPResponse(SOCKET, sockaddr_in);
 void dnsLookUp(u_long, u_short);
 void printResult();
 void resetRetxTimeout(long);
@@ -17,7 +17,7 @@ long getNeighborRTTAvg(int);
 
 SOCKET sock;
 sockaddr_in server;
-ICMPResponseModel *ICMPResArr[MAX_HOP+1];
+ICMPResponseModel *ICMPResArr[MAX_HOP + 1];
 mutex dnsUpdateMutex;
 thread dnsThread[MAX_HOP + 1];
 clock_t retx_timeout;
@@ -29,6 +29,21 @@ priority_queue <HeapHopObj, vector<HeapHopObj>, TimeoutComparator> timeoutQueue;
 
 map <int, int> hopCountMap;
 map <string, int> IPCountMap;
+map<string, int> urlHopMap; //map for any url with 27 and more hops with the hop count
+map<int, int> hostProcessTimeMap;
+int dnsLookUpFailCount = 0;
+
+void reinitialize() {
+	for (int i = 0; i <= MAX_HOP; i++) {
+		ICMPResArr[i] = new ICMPResponseModel();
+		//dnsThread[i] = thread();
+	}
+	retx_timeout = clock_t() + DEFAULT_TIMEOUT_DUR;
+	exec_start = timeGetTime();
+	exitWait = false;
+	server = sockaddr_in();
+	timeoutQueue = priority_queue <HeapHopObj, vector<HeapHopObj>, TimeoutComparator>();
+}
 
 vector<string> getURLList(string filename) {
 	std::ifstream ifs(filename);
@@ -59,8 +74,22 @@ void printAnalysis() {
 	}
 
 	printf("Unique IP Count %d\n", uniqueIPCount);
-	/*for (std::map<string, int>::iterator it = IPCountMap.begin(); it != IPCountMap.end(); ++it)
-		std::cout << it->first << " => " << it->second << '\n';*/
+	
+	printf("\nDelay with bins\n");
+	map <int, int> ::iterator binItr;
+	int binMs = 50;
+	for (binItr = hostProcessTimeMap.begin(); binItr != hostProcessTimeMap.end(); ++binItr, binMs += 50) {
+		/*cout << ((int)binItr->first) * 50<<" ms"
+			<< '\t' << binItr->second << '\n';*/
+		cout<< binMs<<" ms " << '\t' << binItr->second << '\n';
+	}
+
+	map <string, int> ::iterator urlHopCountitr;
+	printf("\n\nURLS with 27 and more Hop Counts\n");
+	for (urlHopCountitr = urlHopMap.begin(); urlHopCountitr != urlHopMap.end(); ++urlHopCountitr) {
+		cout << urlHopCountitr->first
+			<< '\t' << urlHopCountitr->second << '\n';
+	}
 }
 
 int main(int argc, char **argv) {
@@ -79,12 +108,16 @@ int main(int argc, char **argv) {
 		WSACleanup();
 		return -1;
 	}
-
+	utility util;
+	sock = util.initSocket();
 	vector<string> urlList = getURLList("10K-url.txt");
-	printf("urlList size %d\n", urlList.size());
-	for (int i = 0; i < 10/*urlList.size()*/; i++) {
+	for (int i = 0; i < min(400, urlList.size()); i++) {
+		if (i > 0 && i % 100 == 0)
+			printf("processing %d\n", i);
+		exec_start = timeGetTime();
+		reinitialize();
 		string host = urlList.at(i);
-		cout<<"host "<< host<<endl;
+		//cout<<"host "<< host<<endl;
 		UrlValidator validate;
 		UrlParts urlParts = validate.urlParser(host);
 		char* host_char;
@@ -97,14 +130,13 @@ int main(int argc, char **argv) {
 			urlParts.host.copy(host_char, urlParts.host.size());
 			host_char[urlParts.host.size()] = '\0';
 		}
-
-		exec_start = timeGetTime();
-		utility util;
+		//printf("host_char %s\n", host_char);
+		
 		server = util.DNSLookUP(host_char);
-		if (server.sin_port == 0)
+		if (server.sin_port == 0) {
+			dnsLookUpFailCount++;
 			continue;
-
-		sock = util.initSocket();
+		}
 
 		QueryPerformanceCounter(&freq);
 		PCFreq = double(freq.QuadPart) / 1000.0;
@@ -114,8 +146,13 @@ int main(int argc, char **argv) {
 			timeoutQueue.push(HeapHopObj(i, DEFAULT_TIMEOUT_DUR));
 		}
 
-		receiveICMPResponse(sock, server);
-		//Sleep(10000);
+		int hopCount = receiveICMPResponse(sock, server);
+		if (hopCount != -1)
+			urlHopMap[host] = hopCount;
+
+		long processDur = timeGetTime() - exec_start;
+		int bin = (int)(processDur / 50) + 1;
+		hostProcessTimeMap[bin]++;
 	}
 	printAnalysis();
 	WSACleanup();
@@ -153,7 +190,7 @@ void sendICMPRequest(SOCKET sock, int ttl, sockaddr_in server) {
 	}
 	// use regular sendto on the above socket
 	if (sendto(sock, (char*)send_buf, packet_size, 0, (SOCKADDR *)&server, sizeof(server)) == SOCKET_ERROR) {
-		//return SEND_ICMP_SENDTO_SOCKERROR;
+		printf("failed sento \n");
 	}
 	if(ICMPResArr[ttl] == NULL)
 		ICMPResArr[ttl] = new ICMPResponseModel();
@@ -171,7 +208,7 @@ Ref: https://stackoverflow.com/a/1739265/4135902
 https://www.youtube.com/watch?v=SodHvciZTNk
 https://msdn.microsoft.com/en-us/library/windows/desktop/dn553408(v=vs.85).aspx
 */
-void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
+int receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 	u_char rec_buf[MAX_REPLY_SIZE]; /* this buffer starts with an IP header */
 	IPHeader *router_ip_hdr = (IPHeader *)rec_buf;
 	ICMPHeader *router_icmp_hdr = (ICMPHeader *)(router_ip_hdr + 1);
@@ -223,10 +260,10 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 						addr.S_un.S_addr = ICMPResArr[icmpHeader->seq]->IP;
 						char *ip_ntoa = inet_ntoa(addr);
 						string str_ip(ip_ntoa);
-						if (IPCountMap.find(str_ip) == IPCountMap.end())
-							IPCountMap[str_ip]++;
+						//if (IPCountMap.find(str_ip) == IPCountMap.end())
+						IPCountMap[str_ip]++;
 
-						dnsThread[icmpHeader->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, icmpHeader->seq);
+						//dnsThread[icmpHeader->seq] = thread(dnsLookUp, router_ip_hdr->source_ip, icmpHeader->seq);
 
 						if (router_icmp_hdr->type == ICMP_ECHO_REPLY) {
 							firstEchoHopCount = min((int)icmpHeader->seq, firstEchoHopCount);
@@ -235,6 +272,9 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 							ICMPResArr[icmpHeader->seq]->isEcho = true;
 							ICMPResArr[icmpHeader->seq]->isLast = true;
 						}
+
+						/*printf("%d  %s  (%s)  %d ms  (%f) %d\n", icmpHeader->seq, ICMPResArr[icmpHeader->seq]->hostname.c_str(), ICMPResArr[seq]->char_ip.c_str(),
+							ICMPResArr[seq]->RTT, ICMPResArr[seq]->attemptCount);*/
 					}
 				}
 			}
@@ -255,15 +295,17 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 		}
 	}
 
-	for (int i = 1; i <= MAX_HOP; i++) {
+	/*for (int i = 1; i <= MAX_HOP; i++) {
 		if (dnsThread[i].joinable())
 			dnsThread[i].join();
+	}*/
+	if (firstEchoHopCount != INT_MAX) {
+		hopCountMap[firstEchoHopCount]++;
+		if (firstEchoHopCount >= 27)
+			return firstEchoHopCount;
 	}
-	if (firstEchoHopCount != INT_MAX)
-		hopCountMap[firstEchoHopCount] += 1;
-	else
-		printf("INT_MAX\n");
-	printResult();
+	return -1;
+	//printResult();
 	//Sleep(1000);
 }
 

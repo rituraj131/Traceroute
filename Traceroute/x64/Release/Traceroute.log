@@ -1,19 +1,17 @@
 ﻿  main.cpp
 f:\visualstudio\hw4\traceroute\traceroute\UrlValidator.h(3): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-main.cpp(50): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
-  main.cpp(50): note: consider using '%zd' in the format string
-main.cpp(84): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
-  main.cpp(84): note: consider using '%zd' in the format string
-main.cpp(285): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
-main.cpp(372): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(389): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(413): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(416): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
-main.cpp(417): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
-main.cpp(420): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(65): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
+  main.cpp(65): note: consider using '%zd' in the format string
+main.cpp(327): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
+main.cpp(414): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(431): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(455): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(458): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
+main.cpp(459): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
+main.cpp(462): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
   Generating code
-  74 of 816 functions ( 9.1%) were compiled, the rest were copied from previous compilation.
-    47 functions were new in current compilation
-    66 functions had inline decision re-evaluated but remain unchanged
+  1 of 748 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    4 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   Traceroute.vcxproj -> F:\VisualStudio\HW4\Traceroute\x64\Release\Traceroute.exe

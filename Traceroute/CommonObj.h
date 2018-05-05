@@ -24,7 +24,7 @@
 #define ICMP_ECHO_REQUEST 8 
 
 #define DEFAULT_TIMEOUT_DUR 500 //500 ms
-#define MAX_HOP 30
+#define MAX_HOP 38
 
 #define EXTRA_BUFFER_TIMEOUT 10
 #define MINIMUM_BUFFER_TIMEOUT 30
@@ -64,6 +64,16 @@ map <int, int> MAP_AVG_HOP_RTT =
 	std::pair <int, int>(28, 120),
 	std::pair <int, int>(29, 150),
 	std::pair <int, int>(30, 150),
+	std::pair <int, int>(31, 150),
+	std::pair <int, int>(32, 150),
+	std::pair <int, int>(33, 150),
+	std::pair <int, int>(34, 150),
+	std::pair <int, int>(35, 150),
+	std::pair <int, int>(36, 150),
+	std::pair <int, int>(37, 150),
+	std::pair <int, int>(38, 150),
+	std::pair <int, int>(39, 150),
+	std::pair <int, int>(40, 150)
 };
 
 /* remember the current packing state */
