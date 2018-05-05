@@ -26,6 +26,44 @@
 #define DEFAULT_TIMEOUT_DUR 500 //500 ms
 #define MAX_HOP 30
 
+#define EXTRA_BUFFER_TIMEOUT 20
+#define MINIMUM_BUFFER_TIMEOUT 30
+#define ALPHA 0.25
+
+map <int, int> MAP_AVG_HOP_RTT =
+{
+	std::pair <int, int>(1, 1),
+	std::pair <int, int>(2, 1),
+	std::pair <int, int>(3, 1),
+	std::pair <int, int>(4, 1),
+	std::pair <int, int>(5, 1),
+	std::pair <int, int>(6, 1),
+	std::pair <int, int>(7, 2),
+	std::pair <int, int>(8, 2),
+	std::pair <int, int>(9, 3),
+	std::pair <int, int>(10, 3),
+	std::pair <int, int>(11, 4),
+	std::pair <int, int>(12, 4),
+	std::pair <int, int>(13, 5),
+	std::pair <int, int>(14, 5),
+	std::pair <int, int>(15, 5),
+	std::pair <int, int>(16, 6),
+	std::pair <int, int>(17, 8),
+	std::pair <int, int>(18, 8),
+	std::pair <int, int>(19, 9),
+	std::pair <int, int>(20, 26),
+	std::pair <int, int>(21, 26),
+	std::pair <int, int>(22, 26),
+	std::pair <int, int>(23, 60),
+	std::pair <int, int>(24, 60),
+	std::pair <int, int>(25, 80),
+	std::pair <int, int>(26, 80),
+	std::pair <int, int>(27, 80),
+	std::pair <int, int>(28, 100),
+	std::pair <int, int>(29, 100),
+	std::pair <int, int>(30, 100),
+};
+
 /* remember the current packing state */
 #pragma pack (push)
 #pragma pack (1) 
@@ -80,8 +118,8 @@ Object for each TTL router
 class HeapHopObj {
 public:
 	int ttl;
-	int timeout;
-	HeapHopObj(int i, int time_out) { ttl = i; timeout = time_out; }
+	long timeout;
+	HeapHopObj(int i, long time_out) { ttl = i; timeout = time_out; }
 };
 
 class TimeoutComparator

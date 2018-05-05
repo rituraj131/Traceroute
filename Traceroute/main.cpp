@@ -6,9 +6,13 @@ void sendICMPRequest(SOCKET, int, sockaddr_in);
 void receiveICMPResponse(SOCKET, sockaddr_in);
 void dnsLookUp(u_long, u_short);
 void printResult();
-void resetRetxTimeout();
+void resetRetxTimeout(long);
 void retxPackets(SOCKET, sockaddr_in);
+void setPacketTimeouts();
+long getNeighborRTTAvg(int);
 
+SOCKET sock;
+sockaddr_in server;
 ICMPResponseModel *ICMPResArr[MAX_HOP+1];
 mutex dnsUpdateMutex;
 thread dnsThread[MAX_HOP + 1];
@@ -39,9 +43,9 @@ int main(int argc, char **argv) {
 	exec_start = timeGetTime();
 
 	utility util;
-	struct sockaddr_in server = util.DNSLookUP(host);
+	server = util.DNSLookUP(host);
 
-	SOCKET sock = util.initSocket();
+	sock = util.initSocket();
 
 	QueryPerformanceCounter(&freq);
 	PCFreq = double(freq.QuadPart) / 1000.0;
@@ -58,6 +62,7 @@ int main(int argc, char **argv) {
 }
 
 void sendICMPRequest(SOCKET sock, int ttl, sockaddr_in server) {
+	//printf("sendICMPRequest ttl %d\n", ttl);
 	// buffer for the ICMP header
 	u_char send_buf[MAX_ICMP_SIZE]; /* IP header is not present here */
 	ICMPHeader *icmp = (ICMPHeader *)send_buf;
@@ -92,7 +97,7 @@ void sendICMPRequest(SOCKET sock, int ttl, sockaddr_in server) {
 	if(ICMPResArr[ttl] == NULL)
 		ICMPResArr[ttl] = new ICMPResponseModel();
 	
-	ICMPResArr[ttl]->packetSendTime = clock_t();
+	//ICMPResArr[ttl]->packetSendTime = clock_t();
 	QueryPerformanceCounter(&ICMPResArr[ttl]->startTime);
 	ICMPResArr[ttl]->attemptCount++;
 	//printf("ttl %d attemptcount %d\n", ttl, ICMPResArr[ttl]->attemptCount);
@@ -115,10 +120,10 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 	HANDLE eventICMP = WSACreateEvent();
 
 	bool isExit = false;
-	resetRetxTimeout();
+	resetRetxTimeout(DEFAULT_TIMEOUT_DUR);
 
 	while (!exitWait) { //TODO: check when to terminate
-		DWORD timeout = retx_timeout - clock_t();
+		clock_t timeout = retx_timeout - clock_t();
 
 		if (WSAEventSelect(sock, eventICMP, FD_READ) == SOCKET_ERROR) {
 			printf("eventICMP WSAEventSelect error %d\n", WSAGetLastError());
@@ -136,7 +141,7 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 				printf("recv failed with error %d\n", WSAGetLastError());
 				exit(-1); //TODO: exit, really? Sure?
 			}
-
+			
 			if ((router_icmp_hdr->type == ICMP_TTL_EXPIRED || router_icmp_hdr->type == ICMP_ECHO_REPLY) && router_icmp_hdr->code == 0) { //TODO: ) bcz sendICMP had 0? and check for echo types
 				if (orig_ip_hdr->proto == IPPROTO_ICMP) {
 
@@ -145,7 +150,7 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 						icmpHeader = router_icmp_hdr;
 					else
 						icmpHeader = orig_icmp_hdr;
-
+					
 					if (icmpHeader->id == GetCurrentProcessId() && !ICMPResArr[icmpHeader->seq]->gotResponse) {
 						ICMPResArr[icmpHeader->seq]->IP = router_ip_hdr->source_ip;
 						ICMPResArr[icmpHeader->seq]->gotResponse = true;
@@ -173,8 +178,9 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 			break;
 
 		case WAIT_TIMEOUT: { //handle timeout
-			retxPackets(sock, server);
-			resetRetxTimeout();
+			setPacketTimeouts();
+			//retxPackets(sock, server);
+			//resetRetxTimeout();
 		}
 		break;
 		}
@@ -214,8 +220,7 @@ void dnsLookUp(u_long IP, u_short seq) {
 
 	ICMPResArr[seq]->char_ip = ip_ntoa;
 	/*printf("%d  %s  (%s)  %d ms  (%f) %d\n", seq, ICMPResArr[seq]->hostname.c_str(), ICMPResArr[seq]->char_ip.c_str(),
-		ICMPResArr[seq]->RTT.QuadPart, ICMPResArr[seq]->attemptCount);*/
-	//cout << seq << "  " << ICMPResArr[seq]->char_ip << "  " << ICMPResArr[seq]->hostname << endl;
+		ICMPResArr[seq]->RTT, ICMPResArr[seq]->attemptCount);*/
 }
 
 void printResult() {
@@ -234,13 +239,13 @@ void printResult() {
 	printf("\nTotal execution time %d ms\n\n", timeGetTime() - exec_start);
 }
 
-void resetRetxTimeout() {
-	retx_timeout = clock_t() + DEFAULT_TIMEOUT_DUR;
+void resetRetxTimeout(long timeout) {
+	retx_timeout = clock_t() + timeout;
 }
 
 void retxPackets(SOCKET sock, sockaddr_in server) {
 	bool isAnyRetx = false;
-	//printf("retxPackets...");
+	//printf("retxPackets...\n");
 	for (int i = 1; i <= MAX_HOP; i++) {
 		if (!ICMPResArr[i]->gotResponse && ICMPResArr[i]->attemptCount < 3) {
 			//printf(" %d %d    ", i, ICMPResArr[i]->attemptCount);
@@ -251,4 +256,87 @@ void retxPackets(SOCKET sock, sockaddr_in server) {
 
 	if (!isAnyRetx)
 		exitWait = true;
+}
+
+void setPacketTimeouts() {
+	if (timeoutQueue.size() == 0) {
+		exitWait = true;
+		return;
+	}
+
+	vector<int> listRetxSeq;
+
+	//we know there has been a timeout, the top entry on min heap is surely exprired, lets take it out.
+	HeapHopObj heapObj = timeoutQueue.top();
+	timeoutQueue.pop();
+	while (ICMPResArr[heapObj.ttl]->gotResponse || ICMPResArr[heapObj.ttl]->attemptCount >= 3) {
+		if (timeoutQueue.size() == 0) {
+			exitWait = true;
+			return;
+		}
+
+		heapObj = timeoutQueue.top();
+		timeoutQueue.pop();
+	}
+
+	listRetxSeq.push_back(heapObj.ttl);
+	long ref_timeout = heapObj.timeout;
+
+	while (timeoutQueue.size() > 0) {
+		//if next one has also expired, tke it out first!
+		if (timeoutQueue.top().timeout <= ref_timeout) {
+			heapObj = timeoutQueue.top();
+			//the this one has not been received lets take it for retx.
+			if(!ICMPResArr[heapObj.ttl]->gotResponse && ICMPResArr[heapObj.ttl]->attemptCount < 3)
+				listRetxSeq.push_back(heapObj.ttl);
+		}
+		else
+			break;
+		timeoutQueue.pop();
+	}
+	
+	timeoutQueue = priority_queue <HeapHopObj, vector<HeapHopObj>, TimeoutComparator>(); //reset
+	
+	bool isAnyRetx = false;
+	long minFinalRTT = LONG_MAX;
+	for (int i = 0; i < listRetxSeq.size(); i++) {
+		long neighborAvg = getNeighborRTTAvg(listRetxSeq.at(i));
+		long calc_RTT;
+		if (neighborAvg > 0)
+			calc_RTT = ceil(ALPHA * (float)MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + 0.75 * (float)neighborAvg);
+		else
+			calc_RTT = MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + EXTRA_BUFFER_TIMEOUT;
+
+		long timeout = max(MINIMUM_BUFFER_TIMEOUT, calc_RTT);
+
+		minFinalRTT = min(minFinalRTT, timeout);
+
+		sendICMPRequest(sock, listRetxSeq.at(i), server);
+		timeoutQueue.push(HeapHopObj(listRetxSeq.at(i), timeout));
+		isAnyRetx = true;
+	}
+
+	//if(minFinalRTT < LONG_MAX)
+	resetRetxTimeout(minFinalRTT);
+
+	if (!isAnyRetx) {
+		exitWait = true;
+		//printf("please exit now\n");
+	}
+}
+
+long getNeighborRTTAvg(int ttl) {
+	long avg = 0;
+	if (ttl > 1 && ICMPResArr[ttl - 1]->gotResponse)
+		avg = ceil(ICMPResArr[ttl - 1]->RTT);
+	if (ttl < 30 && ICMPResArr[ttl + 1]->gotResponse) {
+		if (avg > 0) {//we got something from ttl-1., lets avg both of them now.
+			avg += ceil(ICMPResArr[ttl + 1]->RTT);
+			avg = ceil((float)avg / 2);
+		}
+		else
+			avg = ceil(ICMPResArr[ttl + 1]->RTT);
+	}
+
+	return avg;
 }
