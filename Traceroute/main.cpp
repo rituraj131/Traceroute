@@ -1,6 +1,7 @@
 #include "common.h"
 #include "CommonObj.h"
 #include "utility.h"
+#include "UrlValidator.h"
 
 void sendICMPRequest(SOCKET, int, sockaddr_in);
 void receiveICMPResponse(SOCKET, sockaddr_in);
@@ -40,10 +41,20 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	exec_start = timeGetTime();
+	UrlValidator validate;
+	UrlParts urlParts = validate.urlParser(host);
+	char* host_char;
+	if (urlParts.isValid == -10)
+		host_char = host;
+	else {
+		host_char = new char[urlParts.host.size() + 1];
+		urlParts.host.copy(host_char, urlParts.host.size());
+		host_char[urlParts.host.size()] = '\0';
+	}
 
+	exec_start = timeGetTime();
 	utility util;
-	server = util.DNSLookUP(host);
+	server = util.DNSLookUP(host_char);
 
 	sock = util.initSocket();
 
