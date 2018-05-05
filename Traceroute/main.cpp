@@ -263,7 +263,7 @@ void setPacketTimeouts() {
 		exitWait = true;
 		return;
 	}
-
+	//printf("setPacketTimeouts\n");
 	vector<int> listRetxSeq;
 
 	//we know there has been a timeout, the top entry on min heap is surely exprired, lets take it out.
@@ -294,30 +294,38 @@ void setPacketTimeouts() {
 			break;
 		timeoutQueue.pop();
 	}
+	long minFinalRTT = LONG_MAX;
+	int currPQSize = timeoutQueue.size();
+	for (int i = 0; i < currPQSize; i++) {
+		HeapHopObj heapHopObj = timeoutQueue.top();
+		timeoutQueue.pop();
+		heapHopObj.timeout = heapHopObj.timeout - ref_timeout;
+		timeoutQueue.push(heapHopObj);
+		//minFinalRTT = min(minFinalRTT, heapHopObj.timeout);
+	}
 	
-	timeoutQueue = priority_queue <HeapHopObj, vector<HeapHopObj>, TimeoutComparator>(); //reset
+	//timeoutQueue = priority_queue <HeapHopObj, vector<HeapHopObj>, TimeoutComparator>(); //reset
 	
 	bool isAnyRetx = false;
-	long minFinalRTT = LONG_MAX;
+	
 	for (int i = 0; i < listRetxSeq.size(); i++) {
 		long neighborAvg = getNeighborRTTAvg(listRetxSeq.at(i));
 		long calc_RTT;
 		if (neighborAvg > 0)
-			calc_RTT = ceil(ALPHA * (float)MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + 0.75 * (float)neighborAvg);
+			calc_RTT = EXTRA_BUFFER_TIMEOUT * 1.5 + ceil(ALPHA * (float)MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + (1 - ALPHA) * (float)neighborAvg);
 		else
 			calc_RTT = MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + EXTRA_BUFFER_TIMEOUT;
 
 		long timeout = max(MINIMUM_BUFFER_TIMEOUT, calc_RTT);
-
+		//printf("seq %d timeout %d calc_RTT %d\n", listRetxSeq.at(i), timeout, calc_RTT);
 		minFinalRTT = min(minFinalRTT, timeout);
-
 		sendICMPRequest(sock, listRetxSeq.at(i), server);
 		timeoutQueue.push(HeapHopObj(listRetxSeq.at(i), timeout));
 		isAnyRetx = true;
 	}
 
-	//if(minFinalRTT < LONG_MAX)
-	resetRetxTimeout(minFinalRTT);
+	if(minFinalRTT < LONG_MAX)
+		resetRetxTimeout(minFinalRTT);
 
 	if (!isAnyRetx) {
 		exitWait = true;

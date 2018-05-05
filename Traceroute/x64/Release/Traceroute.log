@@ -1,13 +1,14 @@
 ﻿  main.cpp
 main.cpp(211): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
-main.cpp(306): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(331): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(334): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
-main.cpp(335): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
-main.cpp(338): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(298): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(315): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(339): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(342): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
+main.cpp(343): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
+main.cpp(346): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
   Generating code
-  0 of 468 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+  2 of 462 functions ( 0.4%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    4 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   Traceroute.vcxproj -> F:\VisualStudio\HW4\Traceroute\x64\Release\Traceroute.exe

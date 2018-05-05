@@ -26,7 +26,7 @@
 #define DEFAULT_TIMEOUT_DUR 500 //500 ms
 #define MAX_HOP 30
 
-#define EXTRA_BUFFER_TIMEOUT 20
+#define EXTRA_BUFFER_TIMEOUT 10
 #define MINIMUM_BUFFER_TIMEOUT 30
 #define ALPHA 0.25
 
@@ -56,12 +56,12 @@ map <int, int> MAP_AVG_HOP_RTT =
 	std::pair <int, int>(22, 26),
 	std::pair <int, int>(23, 60),
 	std::pair <int, int>(24, 60),
-	std::pair <int, int>(25, 80),
-	std::pair <int, int>(26, 80),
-	std::pair <int, int>(27, 80),
-	std::pair <int, int>(28, 100),
-	std::pair <int, int>(29, 100),
-	std::pair <int, int>(30, 100),
+	std::pair <int, int>(25, 100),
+	std::pair <int, int>(26, 100),
+	std::pair <int, int>(27, 120),
+	std::pair <int, int>(28, 120),
+	std::pair <int, int>(29, 150),
+	std::pair <int, int>(30, 150),
 };
 
 /* remember the current packing state */
@@ -127,6 +127,6 @@ class TimeoutComparator
 public:
 	bool operator()(const HeapHopObj& obj1, const HeapHopObj& obj2)
 	{
-		return obj1.timeout < obj2.timeout;
+		return obj1.timeout > obj2.timeout;
 	}
 };
