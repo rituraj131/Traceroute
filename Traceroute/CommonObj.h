@@ -30,6 +30,8 @@
 #define MINIMUM_BUFFER_TIMEOUT 30
 #define ALPHA 0.25
 
+#define BATCH_MODE true
+
 map <int, int> MAP_AVG_HOP_RTT =
 {
 	std::pair <int, int>(1, 1),

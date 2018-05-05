@@ -35,7 +35,8 @@ struct sockaddr_in utility::DNSLookUP(char* host) {
 		if ((remote = gethostbyname(host)) == NULL)
 		{
 			cout << "DNS lookup for host name failed with error " << WSAGetLastError() << endl;
-			exit(-1);
+			return server;
+			//exit(-1);
 		}
 		else // take the first IP address and copy into sin_addr
 		{
