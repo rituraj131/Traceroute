@@ -1,15 +1,27 @@
 ﻿  main.cpp
 f:\visualstudio\hw4\new\traceroute\traceroute\UrlValidator.h(3): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-main.cpp(230): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
-main.cpp(317): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(334): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(358): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(361): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
-main.cpp(362): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
-main.cpp(365): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(231): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
+main.cpp(318): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(335): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(359): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(362): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
+main.cpp(363): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
+main.cpp(366): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+  UrlValidator.cpp
+f:\visualstudio\hw4\new\traceroute\traceroute\UrlValidator.h(3): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+UrlValidator.cpp(16): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(20): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(24): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(28): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(45): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(47): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(51): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(66): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(67): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(104): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+UrlValidator.cpp(132): warning C4101: 'e': unreferenced local variable
+  utility.cpp
   Generating code
-  1 of 538 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    2 functions had inline decision re-evaluated but remain unchanged
+  All 537 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   Finished generating code
   Traceroute.vcxproj -> F:\VisualStudio\HW4\new\Traceroute\x64\Release\Traceroute.exe

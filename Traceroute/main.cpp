@@ -50,8 +50,9 @@ int main(int argc, char **argv) {
 		host_char = host;
 	else {
 		host_char = new char[urlParts.host.size() + 1];
-		urlParts.host.copy(host_char, urlParts.host.size());
-		host_char[urlParts.host.size()] = '\0';
+		strcpy_s(host_char, urlParts.host.size() + 1, urlParts.host.c_str());
+		//urlParts.host.copy(host_char, urlParts.host.size());
+		//host_char[urlParts.host.size()] = '\0';
 	}
 
 	exec_start = timeGetTime();
