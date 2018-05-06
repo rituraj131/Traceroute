@@ -184,14 +184,8 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 		}
 		break;
 
-		case WAIT_OBJECT_0 +1:
-			//isExit = true;
-			break;
-
 		case WAIT_TIMEOUT: { //handle timeout
 			setPacketTimeouts();
-			//retxPackets(sock, server);
-			//resetRetxTimeout();
 		}
 		break;
 		}
@@ -212,8 +206,8 @@ void dnsLookUp(u_long IP, u_short seq) {
 	in_addr addr;
 	addr.S_un.S_addr = IP;
 	char *ip_ntoa = inet_ntoa(addr);
-	struct hostent *remote;
-	remote = gethostbyname(ip_ntoa);
+	/*struct hostent *remote;
+	remote = gethostbyname(ip_ntoa);*/
 	struct addrinfo    hints;
 	struct addrinfo   *res = 0;
 	hints.ai_family = AF_INET;
@@ -323,7 +317,7 @@ void setPacketTimeouts() {
 		long neighborAvg = getNeighborRTTAvg(listRetxSeq.at(i));
 		long calc_RTT;
 		if (neighborAvg > 0)
-			calc_RTT = EXTRA_BUFFER_TIMEOUT * 1.5 + ceil(ALPHA * (float)MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + (1 - ALPHA) * (float)neighborAvg);
+			calc_RTT = EXTRA_BUFFER_TIMEOUT + ceil(ALPHA * (float)MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + (1 - ALPHA) * (float)neighborAvg);
 		else
 			calc_RTT = MAP_AVG_HOP_RTT[listRetxSeq.at(i)] + EXTRA_BUFFER_TIMEOUT;
 
