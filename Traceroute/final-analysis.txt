@@ -1,0 +1,141 @@
+Printing Batch mode analysis
+--------------------------------
+
+hop count for 1 is 0
+hop count for 2 is 0
+hop count for 3 is 0
+hop count for 4 is 0
+hop count for 5 is 0
+hop count for 6 is 62
+hop count for 7 is 1
+hop count for 8 is 0
+hop count for 9 is 26
+hop count for 10 is 2667
+hop count for 11 is 776
+hop count for 12 is 1535
+hop count for 13 is 383
+hop count for 14 is 361
+hop count for 15 is 240
+hop count for 16 is 558
+hop count for 17 is 315
+hop count for 18 is 367
+hop count for 19 is 154
+hop count for 20 is 140
+hop count for 21 is 139
+hop count for 22 is 131
+hop count for 23 is 71
+hop count for 24 is 110
+hop count for 25 is 55
+hop count for 26 is 138
+hop count for 27 is 3
+hop count for 28 is 23
+hop count for 29 is 5
+hop count for 30 is 1
+hop count for 31 is 0
+hop count for 32 is 0
+hop count for 33 is 0
+hop count for 34 is 0
+hop count for 35 is 0
+hop count for 36 is 0
+hop count for 37 is 0
+hop count for 38 is 0
+
+Total number of IPs found 2679
+Unique IP Count 417
+
+Delay with bins
+50 ms 	44
+100 ms 	3903
+150 ms 	1674
+200 ms 	652
+250 ms 	518
+300 ms 	360
+350 ms 	278
+400 ms 	166
+450 ms 	99
+500 ms 	64
+550 ms 	68
+600 ms 	63
+650 ms 	49
+700 ms 	50
+750 ms 	32
+800 ms 	21
+850 ms 	18
+900 ms 	15
+950 ms 	15
+1000 ms 	38
+1050 ms 	41
+1100 ms 	542
+1150 ms 	608
+1200 ms 	204
+1250 ms 	161
+1300 ms 	85
+1350 ms 	63
+1400 ms 	36
+1450 ms 	24
+1500 ms 	17
+1550 ms 	12
+1600 ms 	12
+1650 ms 	8
+1700 ms 	7
+1750 ms 	8
+1800 ms 	1
+1850 ms 	4
+1900 ms 	3
+1950 ms 	2
+2000 ms 	1
+2050 ms 	3
+2100 ms 	1
+2150 ms 	2
+2200 ms 	1
+2250 ms 	2
+2300 ms 	1
+2350 ms 	1
+2400 ms 	1
+2450 ms 	1
+2500 ms 	1
+2550 ms 	1
+2600 ms 	1
+2650 ms 	1
+2700 ms 	1
+2750 ms 	1
+2800 ms 	1
+2850 ms 	1
+2900 ms 	1
+2950 ms 	8
+3000 ms 	1
+3050 ms 	1
+3100 ms 	1
+3150 ms 	1
+
+
+URLS with 27 and more Hop Counts
+http://alldaludug.com/2014/06/12/halkan-kala-soco-sicirka-suuqyada-bosaso/	28
+http://amazon.co.jp/o/ASIN/B00NAM9N7Q/urahana3-22	29
+http://amazon.co.jp/o/ASIN/B00O1F8FCU/urahana3-22	28
+http://amazon.co.jp/o/ASIN/B00O3RU8IU/urahana3-22	29
+http://amazon.co.jp/o/ASIN/B00PF6ANII/urahana3-22	28
+http://amazon.com/?tag=braipick-20	28
+http://amazon.com/exec/obidos/ASIN/B00DJJIR6S/sfsi0c-20	28
+http://amazonlocal.com/	28
+http://amzn.com/1400069076	28
+http://amzn.com/B004NELBPC	28
+http://archives.starbulletin.com/content/archive/month/1996	28
+http://archives.starbulletin.com/content/archive/month/2001	28
+http://astore.amazon.com/chickenajourn-20	28
+http://astore.amazon.com/corporatilawa-20?_encoding=UTF8&node=10	29
+http://astore.amazon.com/corporatilawa-20?_encoding=UTF8&node=20	28
+http://astore.amazon.com/cwptstudentbookstore-20	28
+http://astore.amazon.com/lawfblog-20?_encoding=UTF8&node=4	28
+http://astore.amazon.com/nancynallcom-20	28
+http://astore.amazon.com/susiebrightcom/002-9966192-4232058?_encoding=UTF8&node=3	28
+http://astore.amazon.com/togweteafansaccfsu-20	29
+http://authorcentral.amazon.de/	28
+http://aworkinglibrary.com/reading/remote	28
+http://aws.amazon.com/cn/what-is-cloud-computing/?sc_channel=EL&sc_campaign=CN_amazonfooter	28
+http://aws.amazon.com/fr/what-is-cloud-computing/?sc_channel=EL&sc_campaign=FR_amazonfooter	28
+http://aws.amazon.com/what-is-cloud-computing/?sc_channel=EL&sc_campaign=amazonfooter	28
+http://www.therealestatebloggers.com/	29
+http://www.unizkm.al/	30
+http://www.walhalla.fi/	28
+http://yahoo.tumblr.com/tagged/trevorlive	28

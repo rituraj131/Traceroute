@@ -58,38 +58,58 @@ vector<string> getURLList(string filename) {
 }
 
 void printAnalysis() {
-	for (int i = 1; i <= MAX_HOP; i++)
+	ofstream myfile;
+	myfile.open("final-analysis.txt");
+	printf("\n\nPrinting Batch mode analysis\n");
+	printf("--------------------------------\n\n");
+	myfile << "Printing Batch mode analysis\n";
+	myfile << "--------------------------------\n\n";
+
+	for (int i = 1; i <= MAX_HOP; i++) {
 		printf("hop count for %d is %d\n", i, hopCountMap[i]);
+		myfile << "hop count for " << i << " is " << hopCountMap[i] << "\n";
+	}
+	myfile << "\n";
 	printf("\n");
 
 	printf("Total number of IPs found %d\n", IPCountMap.size());
+	myfile << "Total number of IPs found "<<IPCountMap.size() <<"\n";
 
 	int uniqueIPCount = 0;
 	map <string, int> ::iterator itr;
 	for (itr = IPCountMap.begin(); itr != IPCountMap.end(); ++itr){
-		cout << '\t' << itr->first
-			<< '\t' << itr->second << '\n';
+		/*cout << '\t' << itr->first
+			<< '\t' << itr->second << '\n';*/
 		if (itr->second == 1)
 			uniqueIPCount++;
 	}
 
 	printf("Unique IP Count %d\n", uniqueIPCount);
-	
+	myfile << "Unique IP Count "<< uniqueIPCount<<"\n";
+
 	printf("\nDelay with bins\n");
+	myfile << "\nDelay with bins\n";
+
 	map <int, int> ::iterator binItr;
 	int binMs = 50;
 	for (binItr = hostProcessTimeMap.begin(); binItr != hostProcessTimeMap.end(); ++binItr, binMs += 50) {
 		/*cout << ((int)binItr->first) * 50<<" ms"
 			<< '\t' << binItr->second << '\n';*/
 		cout<< binMs<<" ms " << '\t' << binItr->second << '\n';
+		myfile<< binMs << " ms " << '\t' << binItr->second << '\n';
 	}
 
 	map <string, int> ::iterator urlHopCountitr;
 	printf("\n\nURLS with 27 and more Hop Counts\n");
+	myfile << "\n\nURLS with 27 and more Hop Counts\n";
 	for (urlHopCountitr = urlHopMap.begin(); urlHopCountitr != urlHopMap.end(); ++urlHopCountitr) {
 		cout << urlHopCountitr->first
 			<< '\t' << urlHopCountitr->second << '\n';
+		myfile << urlHopCountitr->first
+			<< '\t' << urlHopCountitr->second << '\n';
+		
 	}
+	myfile.close();
 }
 
 int main(int argc, char **argv) {
@@ -111,7 +131,7 @@ int main(int argc, char **argv) {
 	utility util;
 	sock = util.initSocket();
 	vector<string> urlList = getURLList("10K-url.txt");
-	for (int i = 0; i < min(400, urlList.size()); i++) {
+	for (int i = 0; i < min(10000, urlList.size()); i++) {
 		if (i > 0 && i % 100 == 0)
 			printf("processing %d\n", i);
 		exec_start = timeGetTime();
@@ -295,13 +315,13 @@ int receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 		}
 	}
 
-	/*for (int i = 1; i <= MAX_HOP; i++) {
+	for (int i = 1; i <= MAX_HOP; i++) {
 		if (dnsThread[i].joinable())
 			dnsThread[i].join();
-	}*/
+	}
 	if (firstEchoHopCount != INT_MAX) {
 		hopCountMap[firstEchoHopCount]++;
-		if (firstEchoHopCount >= 27)
+		if (firstEchoHopCount >= 28)
 			return firstEchoHopCount;
 	}
 	return -1;
