@@ -11,6 +11,8 @@ void resetRetxTimeout(long);
 void retxPackets(SOCKET, sockaddr_in);
 void setPacketTimeouts();
 long getNeighborRTTAvg(int);
+void checkNPrintICMPType(int, int, DWORD);
+char* getIP(DWORD);
 
 SOCKET sock;
 sockaddr_in server;
@@ -153,6 +155,11 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 				exit(-1); //TODO: exit, really? Sure?
 			}
 			
+			if (router_icmp_hdr->type == ICMP_DEST_UNREACH) {
+				printf("Got ICMP_DEST_UNREACH... Aborting further processing\n");
+				break;
+			}
+
 			if ((router_icmp_hdr->type == ICMP_TTL_EXPIRED || router_icmp_hdr->type == ICMP_ECHO_REPLY) && router_icmp_hdr->code == 0) { //TODO: ) bcz sendICMP had 0? and check for echo types
 				if (orig_ip_hdr->proto == IPPROTO_ICMP) {
 
@@ -179,6 +186,13 @@ void receiveICMPResponse(SOCKET sock, sockaddr_in server) {
 						}
 					}
 				}
+			}
+			else if (router_icmp_hdr->type == ICMP_DEST_UNREACH && router_icmp_hdr->code >= 0 && router_icmp_hdr->code <= 3) {
+				printf("Got ICMP_DEST_UNREACH error on IP %s, Stopping further execution...Results obtained till this point will be printed\n", getIP(router_ip_hdr->source_ip));
+				isExit = true;
+			}
+			else {
+				checkNPrintICMPType(router_icmp_hdr->type, router_icmp_hdr->code, router_ip_hdr->source_ip);
 			}
 			WSAResetEvent(eventICMP);
 		}
@@ -352,4 +366,26 @@ long getNeighborRTTAvg(int ttl) {
 	}
 
 	return avg;
+}
+
+char* getIP(DWORD IP) {
+	in_addr addr;
+	addr.S_un.S_addr = IP;
+	char *ip_ntoa = inet_ntoa(addr);
+	return ip_ntoa;
+}
+
+void checkNPrintICMPType(int type, int code, DWORD IP) {
+	char *ip_ntoa = getIP(IP);
+	if (type == ICMP_SOURCE_QUENCH && code == 0)
+		printf("\nICMP error type ICMP_SOURCE_QUENCH on IP %s\n", ip_ntoa);
+	else if (type == ICMP_ECHO_REQUEST && code == 0)
+		printf("\nICMP type ICMP_ECHO_REQUEST found on IP %s\n", ip_ntoa);
+	else if (type == ICMP_ROUTER_ADV && code == 0)
+		printf("\nICMP type ICMP_ROUTER_ADV found on IP %s\n", ip_ntoa);
+	else if (type == ICMP_ROUTER_DISCOVERY && code == 0)
+		printf("\nICMP type ICMP_ROUTER_DISCOVERY found on IP %s", ip_ntoa);
+	else if (type == ICMP_BAD_IP_HEADER && code == 0)
+		printf("\nICMP type ICMP_BAD_IP_HEADER found\n");
+	else printf("\nICMP error type %d and code %d on IP %s\n", type, code, ip_ntoa);
 }

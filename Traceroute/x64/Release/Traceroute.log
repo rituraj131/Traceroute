@@ -1,15 +1,15 @@
 ﻿  main.cpp
-f:\visualstudio\hw4\traceroute\traceroute\UrlValidator.h(3): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-main.cpp(216): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
-main.cpp(303): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(320): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(344): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
-main.cpp(347): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
-main.cpp(348): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
-main.cpp(351): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+f:\visualstudio\hw4\new\traceroute\traceroute\UrlValidator.h(3): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+main.cpp(230): warning C4267: 'argument': conversion from 'size_t' to 'socklen_t', possible loss of data
+main.cpp(317): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(334): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(358): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
+main.cpp(361): warning C4244: '+=': conversion from 'double' to 'long', possible loss of data
+main.cpp(362): warning C4244: '=': conversion from 'float' to 'long', possible loss of data
+main.cpp(365): warning C4244: '=': conversion from 'double' to 'long', possible loss of data
   Generating code
-  0 of 536 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+  1 of 538 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+    2 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  Traceroute.vcxproj -> F:\VisualStudio\HW4\Traceroute\x64\Release\Traceroute.exe
+  Traceroute.vcxproj -> F:\VisualStudio\HW4\new\Traceroute\x64\Release\Traceroute.exe
