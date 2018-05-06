@@ -13,7 +13,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>http://astore.amazon.com/susiebrightcom/002-9966192-4232058?_encoding=UTF8&amp;node=3</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>http://www.unizkm.al/</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

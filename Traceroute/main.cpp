@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 	}
 
 	char *host = argv[1];
-	printf("host %s\n", host);
+	printf("Tracerouting to %s...\n", host);
 
 	WSADATA wsaData;
 	
